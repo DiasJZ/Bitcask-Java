@@ -63,4 +63,41 @@ public class CaskFileTest {
         assertEquals(39, stored.length);
         assertArrayEquals(entry.encode(), stored);
     }
+
+    @Test
+    void shouldDecodeEncodedEntry() {
+        Entry original = new Entry(1000L, "ação", "café");
+
+        byte[] bytes = original.encode();
+        Entry decoded = Entry.decode(bytes);
+
+        assertEquals(original.getTimestamp(), decoded.getTimestamp());
+        assertEquals(original.getKey(), decoded.getKey());
+        assertEquals(original.getValue(), decoded.getValue());
+    }
+
+    @Test
+    void shouldReadEntryAfterReopeningFile() throws IOException {
+        Path path = directory.resolve("read.cask");
+        long offset;
+        long firstOffset;
+
+        try (CaskFile file = new CaskFile(path)) {
+            firstOffset = file.append(new Entry(1000L, "nome", "Ana"));
+            offset = file.append(new Entry(2000L, "bebida", "café"));
+        }
+
+        try (CaskFile file = new CaskFile(path)) {
+            Entry entry = file.read(offset);
+
+            assertEquals(2000L, entry.getTimestamp());
+            assertEquals("bebida", entry.getKey());
+            assertEquals("café", entry.getValue());
+            Entry first = file.read(firstOffset);
+
+            assertEquals(1000L, first.getTimestamp());
+            assertEquals("nome", first.getKey());
+            assertEquals("Ana", first.getValue());
+        }
+    }
 }

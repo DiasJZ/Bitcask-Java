@@ -6,6 +6,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class EntryTest {
 
@@ -73,5 +74,37 @@ public class EntryTest {
 
         assertEquals(crc.getValue(), storedChecksum);
         assertArrayEquals(entry.encodePayload(), payload);
+    }
+
+    @Test
+    void shouldRejectCorruptedRecord() {
+        Entry entry = new Entry(1000L, "nome", "Ana");
+        byte[] record = entry.encode();
+
+        record[record.length - 1] = (byte) 'o';
+
+        assertThrows(IllegalArgumentException.class, () -> Entry.decode(record));
+    }
+
+    @Test
+    void shouldRejectIncompleteHeader() {
+        byte[] record = new byte[3];
+
+        assertThrows(IllegalArgumentException.class, () -> Entry.decode(record));
+    }
+
+    @Test
+    void shouldRejectInvalidValueSize() {
+        byte[] record = new Entry(1000L, "nome", "Ana").encode();
+        ByteBuffer buffer = ByteBuffer.wrap(record);
+
+        int valueSizeOffset = Integer.BYTES + 2 * Long.BYTES;
+        buffer.putLong(valueSizeOffset, 4L);
+
+        CRC32 crc = new CRC32();
+        crc.update(record, Integer.BYTES, record.length - Integer.BYTES);
+        buffer.putInt(0, (int) crc.getValue());
+
+        assertThrows(IllegalArgumentException.class, () -> Entry.decode(record));
     }
 }

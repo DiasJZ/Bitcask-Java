@@ -16,6 +16,43 @@ public class Entry {
         this.value = value;
     }
 
+    public static Entry decode(byte[] bytes) {
+        int headerSize = Integer.BYTES + 3 * Long.BYTES;
+        if (bytes.length < headerSize) {
+            throw new IllegalArgumentException("Incomplete record header");
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
+
+        int storedCrc = buffer.getInt();
+
+        CRC32 crc = new CRC32();
+        crc.update(bytes, Integer.BYTES, bytes.length - Integer.BYTES);
+
+        if (crc.getValue() != Integer.toUnsignedLong(storedCrc)) {
+            throw new IllegalArgumentException("Invalid record checksum");
+        }
+
+        long timestamp = buffer.getLong();
+        long keySize = buffer.getLong();
+        long valueSize = buffer.getLong();
+
+        int remaining = buffer.remaining();
+        if (keySize < 0 || valueSize < 0 || keySize > remaining || valueSize != remaining - keySize) {
+            throw new IllegalArgumentException("Invalid key or value size");
+        }
+
+        byte[] keyBytes = new byte[(int) keySize];
+        buffer.get(keyBytes);
+
+        byte[] valueBytes = new byte[(int) valueSize];
+        buffer.get(valueBytes);
+
+        String key = new String(keyBytes, StandardCharsets.UTF_8);
+        String value = new String(valueBytes, StandardCharsets.UTF_8);
+
+        return new Entry(timestamp, key, value);
+    }
+
     public long getTimestamp() {
         return timestamp;
     }
