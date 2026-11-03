@@ -1,6 +1,6 @@
 # Bitcask in Java
 
-An educational project for building a persistent key-value store in Java.
+An project for building a persistent key-value store in Java.
 
 ## Design
 
