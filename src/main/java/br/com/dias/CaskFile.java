@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CaskFile implements AutoCloseable {
 
@@ -28,6 +30,20 @@ public class CaskFile implements AutoCloseable {
         file.write(record);
 
         return offset;
+    }
+
+    Map<String, Long> loadIndex() throws IOException {
+        Map<String, Long> index = new HashMap<>();
+        long offset = 0;
+        long fileSize = file.length();
+
+        while (offset < fileSize) {
+            Entry entry = read(offset);
+            index.put(entry.getKey(), offset);
+            offset = file.getFilePointer();
+        }
+
+        return index;
     }
 
     @Override
