@@ -16,6 +16,7 @@ public class Bitcask implements AutoCloseable {
     private final WriterLock writerLock;
     private final boolean syncOnPut;
     private final long maxFileSize;
+    private final long activeFileId = 0L;
     private boolean closed;
 
     public Bitcask(Path directory) throws IOException {
@@ -35,7 +36,7 @@ public class Bitcask implements AutoCloseable {
         writerLock = new WriterLock(directory);
         CaskFile openedFile = null;
         try {
-            openedFile = new CaskFile(directory.resolve("0.cask"));
+            openedFile = new CaskFile(directory, activeFileId);
             index = openedFile.loadIndex();
             file = openedFile;
         } catch (IOException | RuntimeException error) {

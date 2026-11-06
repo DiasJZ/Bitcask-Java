@@ -6,12 +6,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class CaskFile implements AutoCloseable {
 
     private final RandomAccessFile file;
+
+    public CaskFile(Path directory, long fileId) throws IOException {
+        this(pathFor(directory, fileId));
+    }
+
+    private static Path pathFor(Path directory, long fileId) {
+        if (fileId < 0) {
+            throw new IllegalArgumentException("File ID must not be negative");
+        }
+        return directory.resolve(fileId + ".cask");
+    }
 
     public CaskFile(Path path) throws IOException {
         Path absolutePath = path.toAbsolutePath();
