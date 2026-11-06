@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BitcaskRotationTest {
     @TempDir
@@ -163,7 +164,11 @@ public class BitcaskRotationTest {
         byte[] truncated = Arrays.copyOf(complete, complete.length - 1);
         Files.write(lastPath, truncated);
 
-        assertThrows(IOException.class, () -> new Bitcask(directory, false, 40));
+        assertThrows(IOException.class, () -> {
+            try (Bitcask ignored = new Bitcask(directory, false, 40)) {
+                fail("Opening a database with a truncated record should fail");
+            }
+        });
         assertArrayEquals(first, Files.readAllBytes(directory.resolve("0.cask")));
         assertArrayEquals(truncated, Files.readAllBytes(lastPath));
 
