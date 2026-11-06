@@ -50,6 +50,10 @@ public class CaskFile implements AutoCloseable {
         return index;
     }
 
+    public void sync() throws IOException {
+        file.getFD().sync();
+    }
+
     @Override
     public void close() throws IOException {
         file.close();

@@ -32,6 +32,16 @@ Timestamps represent seconds since the Unix epoch.
 
 CRC32 covers every field after the checksum itself.
 
+## Synchronization and Locking
+
+Call `sync()` to synchronize pending writes with the storage device.
+Use `new Bitcask(directory, true)` to synchronize after each `put` and `delete`.
+The default constructor synchronizes on `sync()` and `close()`.
+
+Each open Bitcask holds an exclusive operating-system lock on `bitcask.lock`.
+A second writer for the same directory is rejected. Closing the store releases
+the lock. The lock file remains in the directory and is reused on the next open.
+
 ## Technologies
 
 - Java 17 or later
