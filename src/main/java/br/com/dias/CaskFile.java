@@ -40,10 +40,13 @@ public class CaskFile implements AutoCloseable {
     }
 
     static Entry readAt(Path directory, EntryLocation location) throws IOException {
-        Path path = pathFor(directory, location.getFileId());
-        try (CaskFile source = new CaskFile(path, true)) {
+        try (CaskFile source = openReadOnly(directory, location.getFileId())) {
             return source.read(location.getOffset());
         }
+    }
+
+    static CaskFile openReadOnly(Path directory, long fileId) throws IOException {
+        return new CaskFile(pathFor(directory, fileId), true);
     }
 
     public long append(Entry entry) throws IOException {
@@ -64,10 +67,15 @@ public class CaskFile implements AutoCloseable {
     }
 
     Map<String, EntryLocation> loadIndex(long fileId) throws IOException {
+        Map<String, EntryLocation> index = new HashMap<>();
+        loadIndex(fileId, index);
+        return index;
+    }
+
+    void loadIndex(long fileId, Map<String, EntryLocation> index) throws IOException {
         if (fileId < 0) {
             throw new IllegalArgumentException("File ID must not be negative");
         }
-        Map<String, EntryLocation> index = new HashMap<>();
         long offset = 0;
         long fileSize = file.length();
 
@@ -80,8 +88,6 @@ public class CaskFile implements AutoCloseable {
             }
             offset = file.getFilePointer();
         }
-
-        return index;
     }
 
     public void sync() throws IOException {

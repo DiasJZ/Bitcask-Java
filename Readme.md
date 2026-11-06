@@ -42,6 +42,19 @@ Each open Bitcask holds an exclusive operating-system lock on `bitcask.lock`.
 A second writer for the same directory is rejected. Closing the store releases
 the lock. The lock file remains in the directory and is reused on the next open.
 
+## File Rotation and Recovery
+
+Data files use numeric names such as `0.cask`, `1.cask`, and `2.cask`.
+The default file size limit is 10 MiB. Use
+`new Bitcask(directory, false, maxFileSize)` to set a limit in bytes.
+Writes rotate to the next file before exceeding the limit. A single record
+larger than the limit is rejected, including its header and UTF-8 data.
+
+On startup, files are read in numeric order to rebuild the index. Later
+records replace earlier values, and deletion records remove earlier keys.
+Writing resumes in the highest-numbered file and rotates when necessary.
+Corrupt or incomplete records cause opening to fail without modifying data.
+
 ## Technologies
 
 - Java 17 or later
