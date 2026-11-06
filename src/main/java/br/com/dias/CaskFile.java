@@ -39,7 +39,11 @@ public class CaskFile implements AutoCloseable {
 
         while (offset < fileSize) {
             Entry entry = read(offset);
-            index.put(entry.getKey(), offset);
+            if (entry.isDeleted()) {
+                index.remove(entry.getKey());
+            } else {
+                index.put(entry.getKey(), offset);
+            }
             offset = file.getFilePointer();
         }
 
@@ -62,14 +66,15 @@ public class CaskFile implements AutoCloseable {
 
         long keySize = headerBuffer.getLong();
         long valueSize = headerBuffer.getLong();
+        long valueBytesSize = valueSize == -1 ? 0 : valueSize;
         long bytesAvailable = file.length() - file.getFilePointer();
         long maxDataSize = Math.min(bytesAvailable, Integer.MAX_VALUE - headerSize);
 
-        if (keySize < 0 || valueSize < 0 || keySize > maxDataSize || valueSize > maxDataSize - keySize) {
+        if (keySize < 0 || valueSize < -1 || keySize > maxDataSize || valueBytesSize > maxDataSize - keySize) {
             throw new IOException("Invalid record size");
         }
 
-        int dataSize = (int) (keySize + valueSize);
+        int dataSize = (int) (keySize + valueBytesSize);
         byte[] record = Arrays.copyOf(header, headerSize + dataSize);
         file.readFully(record, headerSize, dataSize);
 

@@ -2,6 +2,7 @@ package br.com.dias;
 import java.nio.charset.StandardCharsets;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Objects;
 import java.util.zip.CRC32;
 
 public class Entry {
@@ -12,8 +13,16 @@ public class Entry {
 
     public Entry(long timestamp, String key, String value) {
         this.timestamp = timestamp;
-        this.key = key;
+        this.key = Objects.requireNonNull(key, "Key must not be null");
         this.value = value;
+    }
+
+    public static Entry tombstone(long timestamp, String key) {
+        return new Entry(timestamp, key, null);
+    }
+
+    public boolean isDeleted() {
+        return value == null;
     }
 
     public static Entry decode(byte[] bytes) {
@@ -35,20 +44,21 @@ public class Entry {
         long timestamp = buffer.getLong();
         long keySize = buffer.getLong();
         long valueSize = buffer.getLong();
+        long valueBytesSize = valueSize == -1 ? 0 : valueSize;
 
         int remaining = buffer.remaining();
-        if (keySize < 0 || valueSize < 0 || keySize > remaining || valueSize != remaining - keySize) {
+        if (keySize < 0 || valueSize < -1 || keySize > remaining || valueBytesSize != remaining - keySize) {
             throw new IllegalArgumentException("Invalid key or value size");
         }
 
         byte[] keyBytes = new byte[(int) keySize];
         buffer.get(keyBytes);
 
-        byte[] valueBytes = new byte[(int) valueSize];
+        byte[] valueBytes = new byte[(int) valueBytesSize];
         buffer.get(valueBytes);
 
         String key = new String(keyBytes, StandardCharsets.UTF_8);
-        String value = new String(valueBytes, StandardCharsets.UTF_8);
+        String value = valueSize == -1 ? null : new String(valueBytes, StandardCharsets.UTF_8);
 
         return new Entry(timestamp, key, value);
     }
@@ -70,12 +80,15 @@ public class Entry {
     }
 
     public long getValueSize() {
+        if (isDeleted()) {
+            return -1;
+        }
         return value.getBytes(StandardCharsets.UTF_8).length;
     }
 
     public byte[] encodePayload() {
         byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
-        byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+        byte[] valueBytes = isDeleted() ? new byte[0] : value.getBytes(StandardCharsets.UTF_8);
 
         int size = Math.toIntExact(24L + keyBytes.length + valueBytes.length);
 
@@ -84,7 +97,7 @@ public class Entry {
 
         buffer.putLong(timestamp);
         buffer.putLong(keyBytes.length);
-        buffer.putLong(valueBytes.length);
+        buffer.putLong(getValueSize());
         buffer.put(keyBytes);
         buffer.put(valueBytes);
 

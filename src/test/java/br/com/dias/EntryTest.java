@@ -7,8 +7,34 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EntryTest {
+
+    @Test
+    void shouldEncodeAndDecodeDeletionRecord() {
+        byte[] record = Entry.tombstone(1000L, "ação").encode();
+        Entry decoded = Entry.decode(record);
+
+        assertEquals(34, record.length);
+        assertEquals(1000L, decoded.getTimestamp());
+        assertEquals("ação", decoded.getKey());
+        assertEquals(-1L, decoded.getValueSize());
+        assertTrue(decoded.isDeleted());
+    }
+
+    @Test
+    void shouldRejectValueSizeBelowDeletionMarker() {
+        byte[] record = Entry.tombstone(1000L, "nome").encode();
+        ByteBuffer buffer = ByteBuffer.wrap(record);
+        buffer.putLong(Integer.BYTES + 2 * Long.BYTES, -2L);
+
+        CRC32 crc = new CRC32();
+        crc.update(record, Integer.BYTES, record.length - Integer.BYTES);
+        buffer.putInt(0, (int) crc.getValue());
+
+        assertThrows(IllegalArgumentException.class, () -> Entry.decode(record));
+    }
 
     @Test
     void shouldStoreProvidedValues() {

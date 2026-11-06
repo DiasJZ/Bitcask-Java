@@ -26,6 +26,8 @@ CRC32 | timestamp | key size | value size | key | value
 
 The header occupies 28 bytes. Numbers use big-endian byte order.
 Text uses UTF-8, and lengths are measured in bytes.
+Deletion records use a value size of -1 and contain no value bytes.
+An empty string has a value size of 0 and remains a valid value.
 Timestamps represent seconds since the Unix epoch.
 
 CRC32 covers every field after the checksum itself.
