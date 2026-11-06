@@ -21,7 +21,7 @@ final class DataFileWriter implements AutoCloseable {
         file = new CaskFile(directory, activeFileId);
     }
 
-    long append(Entry entry) throws IOException {
+    EntryLocation append(Entry entry) throws IOException {
         ensureOpen();
         byte[] record = entry.encode();
         if (record.length > maxFileSize) {
@@ -31,7 +31,8 @@ final class DataFileWriter implements AutoCloseable {
         if (currentSize > 0 && record.length > maxFileSize - currentSize) {
             rotate();
         }
-        return file.append(record);
+        long offset = file.append(record);
+        return new EntryLocation(activeFileId, offset);
     }
 
     long getActiveFileId() {

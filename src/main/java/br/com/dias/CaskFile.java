@@ -26,11 +26,24 @@ public class CaskFile implements AutoCloseable {
     }
 
     public CaskFile(Path path) throws IOException {
+        this(path, false);
+    }
+
+    private CaskFile(Path path, boolean readOnly) throws IOException {
         Path absolutePath = path.toAbsolutePath();
 
-        Files.createDirectories(absolutePath.getParent());
+        if (!readOnly) {
+            Files.createDirectories(absolutePath.getParent());
+        }
 
-        this.file = new RandomAccessFile(absolutePath.toFile(), "rw");
+        this.file = new RandomAccessFile(absolutePath.toFile(), readOnly ? "r" : "rw");
+    }
+
+    static Entry readAt(Path directory, EntryLocation location) throws IOException {
+        Path path = pathFor(directory, location.getFileId());
+        try (CaskFile source = new CaskFile(path, true)) {
+            return source.read(location.getOffset());
+        }
     }
 
     public long append(Entry entry) throws IOException {
@@ -50,8 +63,11 @@ public class CaskFile implements AutoCloseable {
         return file.length();
     }
 
-    Map<String, Long> loadIndex() throws IOException {
-        Map<String, Long> index = new HashMap<>();
+    Map<String, EntryLocation> loadIndex(long fileId) throws IOException {
+        if (fileId < 0) {
+            throw new IllegalArgumentException("File ID must not be negative");
+        }
+        Map<String, EntryLocation> index = new HashMap<>();
         long offset = 0;
         long fileSize = file.length();
 
@@ -60,7 +76,7 @@ public class CaskFile implements AutoCloseable {
             if (entry.isDeleted()) {
                 index.remove(entry.getKey());
             } else {
-                index.put(entry.getKey(), offset);
+                index.put(entry.getKey(), new EntryLocation(fileId, offset));
             }
             offset = file.getFilePointer();
         }

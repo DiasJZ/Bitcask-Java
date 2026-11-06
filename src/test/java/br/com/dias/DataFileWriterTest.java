@@ -21,13 +21,13 @@ public class DataFileWriterTest {
         Entry entry = new Entry(1000L, "name", "Ana");
         int size = entry.encode().length;
         try (DataFileWriter writer = new DataFileWriter(directory, 0, size * 2L)) {
-            assertEquals(0L, writer.append(entry));
-            assertEquals(size, writer.append(entry));
+            assertEquals(0L, writer.append(entry).getOffset());
+            assertEquals(size, writer.append(entry).getOffset());
             assertEquals(0L, writer.getActiveFileId());
             assertFalse(Files.exists(directory.resolve("1.cask")));
             byte[] original = Files.readAllBytes(directory.resolve("0.cask"));
 
-            assertEquals(0L, writer.append(entry));
+            assertEquals(0L, writer.append(entry).getOffset());
             assertEquals(1L, writer.getActiveFileId());
             assertArrayEquals(original, Files.readAllBytes(directory.resolve("0.cask")));
             assertArrayEquals(entry.encode(), Files.readAllBytes(directory.resolve("1.cask")));
@@ -41,9 +41,9 @@ public class DataFileWriterTest {
         Entry deletion = Entry.tombstone(1002L, "name");
         try (DataFileWriter writer = new DataFileWriter(directory, 0, 50)) {
             writer.append(first);
-            assertEquals(0L, writer.append(second));
+            assertEquals(0L, writer.append(second).getOffset());
             assertEquals(1L, writer.getActiveFileId());
-            assertEquals(0L, writer.append(deletion));
+            assertEquals(0L, writer.append(deletion).getOffset());
             assertEquals(2L, writer.getActiveFileId());
         }
         assertArrayEquals(first.encode(), Files.readAllBytes(directory.resolve("0.cask")));
@@ -89,8 +89,8 @@ public class DataFileWriterTest {
         }
         DataFileWriter writer = new DataFileWriter(directory, 2, 70);
         try (writer) {
-            assertEquals(35L, writer.append(entry));
-            assertEquals(0L, writer.append(entry));
+            assertEquals(35L, writer.append(entry).getOffset());
+            assertEquals(0L, writer.append(entry).getOffset());
             assertEquals(3L, writer.getActiveFileId());
         }
         writer.close();

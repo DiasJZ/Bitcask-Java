@@ -12,7 +12,8 @@ public class Bitcask implements AutoCloseable {
     private static final long DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024L;
 
     private final CaskFile file;
-    private final Map<String, Long> index;
+    private final Map<String, EntryLocation> index;
+    private final Path directory;
     private final WriterLock writerLock;
     private final boolean syncOnPut;
     private final long maxFileSize;
@@ -32,12 +33,13 @@ public class Bitcask implements AutoCloseable {
             throw new IllegalArgumentException("Maximum file size must be greater than zero");
         }
         this.maxFileSize = maxFileSize;
+        this.directory = directory;
         this.syncOnPut = syncOnPut;
         writerLock = new WriterLock(directory);
         CaskFile openedFile = null;
         try {
             openedFile = new CaskFile(directory, activeFileId);
-            index = openedFile.loadIndex();
+            index = openedFile.loadIndex(activeFileId);
             file = openedFile;
         } catch (IOException | RuntimeException error) {
             if (openedFile != null) {
@@ -61,7 +63,7 @@ public class Bitcask implements AutoCloseable {
         Objects.requireNonNull(value, "Value must not be null");
         Entry entry = new Entry(Instant.now().getEpochSecond(), key, value);
         long offset = file.append(entry);
-        index.put(key, offset);
+        index.put(key, new EntryLocation(activeFileId, offset));
         if (syncOnPut) {
             file.sync();
         }
@@ -79,11 +81,14 @@ public class Bitcask implements AutoCloseable {
 
     public synchronized Optional<String> get(String key) throws IOException {
         ensureOpen();
-        Long offset = index.get(key);
-        if (offset == null) {
+        EntryLocation location = index.get(key);
+        if (location == null) {
             return Optional.empty();
         }
-        return Optional.of(file.read(offset).getValue());
+        Entry entry = location.getFileId() == activeFileId
+                ? file.read(location.getOffset())
+                : CaskFile.readAt(directory, location);
+        return Optional.of(entry.getValue());
     }
 
     public synchronized void sync() throws IOException {
