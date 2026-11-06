@@ -13,19 +13,19 @@ public class EntryTest {
 
     @Test
     void shouldEncodeAndDecodeDeletionRecord() {
-        byte[] record = Entry.tombstone(1000L, "ação").encode();
+        byte[] record = Entry.tombstone(1000L, "naïve").encode();
         Entry decoded = Entry.decode(record);
 
         assertEquals(34, record.length);
         assertEquals(1000L, decoded.getTimestamp());
-        assertEquals("ação", decoded.getKey());
+        assertEquals("naïve", decoded.getKey());
         assertEquals(-1L, decoded.getValueSize());
         assertTrue(decoded.isDeleted());
     }
 
     @Test
     void shouldRejectValueSizeBelowDeletionMarker() {
-        byte[] record = Entry.tombstone(1000L, "nome").encode();
+        byte[] record = Entry.tombstone(1000L, "name").encode();
         ByteBuffer buffer = ByteBuffer.wrap(record);
         buffer.putLong(Integer.BYTES + 2 * Long.BYTES, -2L);
 
@@ -38,16 +38,16 @@ public class EntryTest {
 
     @Test
     void shouldStoreProvidedValues() {
-        Entry entry = new Entry(1000L, "nome", "Ana");
+        Entry entry = new Entry(1000L, "name", "Ana");
 
         assertEquals(1000L, entry.getTimestamp());
-        assertEquals("nome", entry.getKey());
+        assertEquals("name", entry.getKey());
         assertEquals("Ana", entry.getValue());
     }
 
     @Test
     void shouldCalculateUtf8Sizes() {
-        Entry entry = new Entry(1000L, "ação", "café");
+        Entry entry = new Entry(1000L, "naïve", "café");
 
         assertEquals(6L, entry.getKeySize());
         assertEquals(5L, entry.getValueSize());
@@ -55,7 +55,7 @@ public class EntryTest {
 
     @Test
     void shouldEncodePayloadInOrder() {
-        Entry entry = new Entry(1000L, "nome", "Ana");
+        Entry entry = new Entry(1000L, "name", "Ana");
 
         byte[] payload = entry.encodePayload();
 
@@ -74,14 +74,14 @@ public class EntryTest {
         byte[] valueBytes = new byte[3];
         buffer.get(valueBytes);
 
-        assertArrayEquals("nome".getBytes(StandardCharsets.UTF_8), keyBytes);
+        assertArrayEquals("name".getBytes(StandardCharsets.UTF_8), keyBytes);
         assertArrayEquals("Ana".getBytes(StandardCharsets.UTF_8), valueBytes);
 
         assertEquals(0, buffer.remaining());
     }
     @Test
     void shouldEncodeRecordWithValidChecksum() {
-        Entry entry = new Entry(1000L, "nome", "Ana");
+        Entry entry = new Entry(1000L, "name", "Ana");
 
         byte[] record = entry.encode();
 
@@ -104,7 +104,7 @@ public class EntryTest {
 
     @Test
     void shouldRejectCorruptedRecord() {
-        Entry entry = new Entry(1000L, "nome", "Ana");
+        Entry entry = new Entry(1000L, "name", "Ana");
         byte[] record = entry.encode();
 
         record[record.length - 1] = (byte) 'o';
@@ -121,7 +121,7 @@ public class EntryTest {
 
     @Test
     void shouldRejectInvalidValueSize() {
-        byte[] record = new Entry(1000L, "nome", "Ana").encode();
+        byte[] record = new Entry(1000L, "name", "Ana").encode();
         ByteBuffer buffer = ByteBuffer.wrap(record);
 
         int valueSizeOffset = Integer.BYTES + 2 * Long.BYTES;

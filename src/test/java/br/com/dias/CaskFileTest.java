@@ -20,8 +20,8 @@ public class CaskFileTest {
     void shouldAppendEntriesWithoutOverwriting() throws IOException {
         Path path = directory.resolve("data").resolve("0.cask");
 
-        Entry first = new Entry(1000L, "nome", "Ana");
-        Entry second = new Entry(1001L, "cidade", "Recife");
+        Entry first = new Entry(1000L, "name", "Ana");
+        Entry second = new Entry(1001L, "city", "Recife");
 
         byte[] firstBytes = first.encode();
         byte[] secondBytes = second.encode();
@@ -52,7 +52,7 @@ public class CaskFileTest {
     @Test
     void shouldWriteUtf8Entry() throws IOException {
         Path path = directory.resolve("utf8.cask");
-        Entry entry = new Entry(1000L, "ação", "café");
+        Entry entry = new Entry(1000L, "naïve", "café");
 
         try (CaskFile file = new CaskFile(path)) {
             assertEquals(0L, file.append(entry));
@@ -66,7 +66,7 @@ public class CaskFileTest {
 
     @Test
     void shouldDecodeEncodedEntry() {
-        Entry original = new Entry(1000L, "ação", "café");
+        Entry original = new Entry(1000L, "naïve", "café");
 
         byte[] bytes = original.encode();
         Entry decoded = Entry.decode(bytes);
@@ -83,20 +83,20 @@ public class CaskFileTest {
         long firstOffset;
 
         try (CaskFile file = new CaskFile(path)) {
-            firstOffset = file.append(new Entry(1000L, "nome", "Ana"));
-            offset = file.append(new Entry(2000L, "bebida", "café"));
+            firstOffset = file.append(new Entry(1000L, "name", "Ana"));
+            offset = file.append(new Entry(2000L, "drink", "café"));
         }
 
         try (CaskFile file = new CaskFile(path)) {
             Entry entry = file.read(offset);
 
             assertEquals(2000L, entry.getTimestamp());
-            assertEquals("bebida", entry.getKey());
+            assertEquals("drink", entry.getKey());
             assertEquals("café", entry.getValue());
             Entry first = file.read(firstOffset);
 
             assertEquals(1000L, first.getTimestamp());
-            assertEquals("nome", first.getKey());
+            assertEquals("name", first.getKey());
             assertEquals("Ana", first.getValue());
         }
     }
