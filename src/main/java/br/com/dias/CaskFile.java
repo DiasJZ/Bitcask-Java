@@ -34,14 +34,20 @@ public class CaskFile implements AutoCloseable {
     }
 
     public long append(Entry entry) throws IOException {
-        byte[] record = entry.encode();
+        return append(entry.encode());
+    }
 
+    long append(byte[] record) throws IOException {
         long offset = file.length();
 
         file.seek(offset);
         file.write(record);
 
         return offset;
+    }
+
+    public long size() throws IOException {
+        return file.length();
     }
 
     Map<String, Long> loadIndex() throws IOException {
