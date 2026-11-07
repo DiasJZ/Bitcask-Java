@@ -122,7 +122,7 @@ final class CompactionPreparation {
         return fileIds;
     }
 
-    private static long checksum(Path path) throws IOException {
+    static long checksum(Path path) throws IOException {
         CRC32 crc = new CRC32();
         byte[] buffer = new byte[8192];
         try (var input = Files.newInputStream(path)) {
