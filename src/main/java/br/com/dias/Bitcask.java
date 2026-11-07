@@ -16,11 +16,13 @@ import java.util.Optional;
 public class Bitcask implements AutoCloseable {
     private static final long DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024L;
 
-    private final DataFileWriter writer;
-    private final Map<String, EntryLocation> index = new HashMap<>();
+    private DataFileWriter writer;
+    private Map<String, EntryLocation> index;
     private final Path directory;
+    private Path dataDirectory;
     private final WriterLock writerLock;
     private final boolean syncOnPut;
+    private final long maxFileSize;
     private boolean closed;
 
     public Bitcask(Path directory) throws IOException {
@@ -35,18 +37,12 @@ public class Bitcask implements AutoCloseable {
         if (maxFileSize <= 0) {
             throw new IllegalArgumentException("Maximum file size must be greater than zero");
         }
-        this.directory = directory;
+        this.directory = directory.toAbsolutePath().normalize();
         this.syncOnPut = syncOnPut;
-        writerLock = new WriterLock(directory);
+        this.maxFileSize = maxFileSize;
+        writerLock = new WriterLock(this.directory);
         try {
-            List<Long> fileIds = findDataFileIds();
-            for (long fileId : fileIds) {
-                try (CaskFile source = CaskFile.openReadOnly(directory, fileId)) {
-                    source.loadIndex(fileId, index);
-                }
-            }
-            long activeFileId = fileIds.isEmpty() ? 0L : fileIds.get(fileIds.size() - 1);
-            writer = new DataFileWriter(directory, activeFileId, maxFileSize);
+            openDataFiles();
         } catch (IOException | RuntimeException error) {
             try {
                 writerLock.close();
@@ -57,9 +53,27 @@ public class Bitcask implements AutoCloseable {
         }
     }
 
-    private List<Long> findDataFileIds() throws IOException {
+    private void openDataFiles() throws IOException {
+        CompactionState state = CompactionRecovery.recover(directory);
+        Path selectedDirectory = state.getDataDirectory();
+        List<Long> fileIds = findDataFileIds(selectedDirectory);
+        Map<String, EntryLocation> loadedIndex = new HashMap<>();
+        for (long fileId : fileIds) {
+            try (CaskFile source = CaskFile.openReadOnly(selectedDirectory, fileId)) {
+                source.loadIndex(fileId, loadedIndex);
+            }
+        }
+        long lastFileId = fileIds.isEmpty() ? 0L : fileIds.get(fileIds.size() - 1);
+        long activeFileId = Math.max(lastFileId, state.getFirstWritableFileId());
+        DataFileWriter openedWriter = new DataFileWriter(selectedDirectory, activeFileId, maxFileSize);
+        dataDirectory = selectedDirectory;
+        index = loadedIndex;
+        writer = openedWriter;
+    }
+
+    private List<Long> findDataFileIds(Path dataDirectory) throws IOException {
         List<Long> fileIds = new ArrayList<>();
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(directory, "*.cask")) {
+        try (DirectoryStream<Path> paths = Files.newDirectoryStream(dataDirectory, "*.cask")) {
             for (Path path : paths) {
                 String name = path.getFileName().toString();
                 if (!name.matches("[0-9]+\\.cask")) {
@@ -108,13 +122,71 @@ public class Bitcask implements AutoCloseable {
         if (location == null) {
             return Optional.empty();
         }
-        Entry entry = CaskFile.readAt(directory, location);
+        Entry entry = CaskFile.readAt(dataDirectory, location);
         return Optional.of(entry.getValue());
     }
 
     public synchronized void sync() throws IOException {
         ensureOpen();
         writer.sync();
+    }
+
+    public synchronized void compact() throws IOException {
+        ensureOpen();
+        writer.sync();
+        Path previousDirectory = dataDirectory;
+        List<Long> previousFileIds = findDataFileIds(previousDirectory);
+        CompactionPlan plan = new CompactionPlan(previousDirectory, index);
+        Path output = CompactionWriter.write(directory, plan, maxFileSize);
+        CompactionPreparation.prepare(directory, output, plan, maxFileSize);
+
+        try {
+            writer.close();
+            CompactionRecovery.commit(directory, output);
+            openDataFiles();
+        } catch (IOException | RuntimeException error) {
+            try {
+                openDataFiles();
+            } catch (IOException | RuntimeException recoveryError) {
+                error.addSuppressed(recoveryError);
+                closed = true;
+                try {
+                    writer.close();
+                } catch (IOException closeError) {
+                    error.addSuppressed(closeError);
+                }
+                try {
+                    writerLock.close();
+                } catch (IOException closeError) {
+                    error.addSuppressed(closeError);
+                }
+            }
+            throw error;
+        }
+        removePreviousFiles(previousDirectory, previousFileIds);
+    }
+
+    private void removePreviousFiles(Path previousDirectory, List<Long> fileIds) throws IOException {
+        Path root = directory.toRealPath();
+        Path previous = previousDirectory.toRealPath();
+        if (previous.equals(dataDirectory.toRealPath())
+                || (!previous.equals(root) && (!root.equals(previous.getParent())
+                || !previous.getFileName().toString().startsWith(".compaction-")))) {
+            throw new IOException("Invalid directory for old data cleanup");
+        }
+        for (long fileId : fileIds) {
+            Files.deleteIfExists(previous.resolve(fileId + ".cask"));
+        }
+        if (!previous.equals(root)) {
+            Files.deleteIfExists(previous.resolve("READY"));
+            boolean empty;
+            try (var paths = Files.list(previous)) {
+                empty = paths.findAny().isEmpty();
+            }
+            if (empty) {
+                Files.delete(previous);
+            }
+        }
     }
 
     private void ensureOpen() throws IOException {

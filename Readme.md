@@ -55,6 +55,21 @@ records replace earlier values, and deletion records remove earlier keys.
 Writing resumes in the highest-numbered file and rotates when necessary.
 Corrupt or incomplete records cause opening to fail without modifying data.
 
+## Compaction
+
+Call `compact()` to rewrite only the current values and discard obsolete
+records. Operations on the same instance wait until compaction finishes.
+The output is validated and synchronized before `CURRENT` atomically selects
+the new data directory. Old data files are removed after the switch succeeds.
+
+Always reopen the original database directory. Startup uses `CURRENT` to
+select the committed files and ignores uncommitted temporary output.
+Compacted base files remain unchanged; subsequent writes use separate files.
+Missing or corrupted committed files cause opening to fail instead of falling
+back to outdated data. An interruption during cleanup may leave unused old files.
+If cleanup fails after the switch, `compact()` reports the error while the
+database continues using the committed data.
+
 ## Technologies
 
 - Java 17 or later
