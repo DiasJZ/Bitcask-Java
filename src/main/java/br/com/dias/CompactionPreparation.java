@@ -99,12 +99,19 @@ final class CompactionPreparation {
         try (var paths = Files.newDirectoryStream(directory)) {
             for (Path path : paths) {
                 String name = path.getFileName().toString();
-                if (!name.matches("(0|[1-9][0-9]*)\\.cask")
+                if (!name.matches("(0|[1-9][0-9]*)\\.(cask|hint)")
                         || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
                     throw new IOException("Unexpected compaction output: " + name);
                 }
                 try {
-                    fileIds.add(Long.parseLong(name.substring(0, name.length() - 5)));
+                    long fileId = Long.parseLong(name.substring(0, name.length() - 5));
+                    if (name.endsWith(".hint")) {
+                        if (!Files.isRegularFile(directory.resolve(fileId + ".cask"), LinkOption.NOFOLLOW_LINKS)) {
+                            throw new IOException("Hint has no matching compacted data file: " + name);
+                        }
+                    } else {
+                        fileIds.add(fileId);
+                    }
                 } catch (NumberFormatException error) {
                     throw new IOException("Invalid compacted file ID: " + name, error);
                 }

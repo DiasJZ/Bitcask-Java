@@ -8,8 +8,7 @@ enable hints in the database.
 publication. Its caller must keep the source file unchanged for the entire call.
 It validates record sizes, record CRC32 values, and UTF-8 keys, and streams value
 bytes without storing them in the hint. It fails if atomic publication is not
-supported; there is no non-atomic replacement fallback. Automatic generation and
-hint loading are not connected to database operations yet.
+supported; there is no non-atomic replacement fallback.
 
 `HintFileReader.read(directory, fileId)` reads a hint into an immutable
 `HintFile`, preserving every `HintEntry` in physical record order. It checks the
@@ -29,6 +28,20 @@ the supplied index unchanged. Loading does not rewrite or delete either file.
 The caller must provide a mutable index, process files in numeric order, and
 keep the source unchanged throughout loading. This loader is not connected to
 database startup yet.
+
+Rotation generates a hint after synchronizing and closing the old data file and
+switching the writer to a new file. If hint generation fails, the pending append
+is not performed, the error propagates, and the new writer remains usable.
+Ordinary close does not generate a hint for a file that may resume receiving
+writes on the next open.
+
+Compaction output includes hints for all base files, including the final file
+and an empty base. Failed output writing removes generated data files and hints.
+Preparation and commit allow optional, canonically named hints associated with
+the compacted data files. Hints are not part of the READY manifest and their
+absence or damaged contents do not invalidate committed data. Unexpected names,
+orphan hints, and non-regular hint paths are rejected in prepared output.
+After a successful switch, cleanup removes each obsolete data file and its hint.
 
 ## Purpose and Location
 

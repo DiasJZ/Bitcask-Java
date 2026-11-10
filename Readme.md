@@ -78,8 +78,16 @@ closed data files and publishes complete, synchronized hints atomically. An
 internal reader checks hint structure and checksums and returns ordered metadata.
 A loader checks the source size and checksum before using a hint, falling back
 to a normal data scan when needed. Source errors still propagate without applying
-partial index changes. Automatic generation and startup integration are not
-enabled yet; the database still scans its data files.
+partial index changes. Rotation generates a hint for each sealed file, and
+compaction generates hints for all compacted base files, including an empty base.
+Hints are removed with the obsolete data files after a successful compaction.
+The active writable file does not receive an automatic hint on ordinary close.
+Startup integration is not enabled yet; the database still scans its data files.
+
+If hint generation fails during rotation, the triggering write reports the error
+before appending its record. The writer has already moved to the next file and
+can accept a retry. A hint-generation failure during compaction output writing
+aborts that output before switching the database to it.
 
 ## Technologies
 

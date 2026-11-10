@@ -17,11 +17,14 @@ final class CompactionWriter {
         keys.sort(String::compareTo);
         Path temporaryDirectory = Files.createTempDirectory(directory, ".compaction-");
         try {
+            long lastFileId;
             try (DataFileWriter writer = new DataFileWriter(temporaryDirectory, 0, maxFileSize)) {
                 for (String key : keys) {
                     writer.append(plan.readEntry(key));
                 }
+                lastFileId = writer.getActiveFileId();
             }
+            HintFileWriter.write(temporaryDirectory, lastFileId);
             return temporaryDirectory;
         } catch (IOException | RuntimeException error) {
             try {
@@ -34,7 +37,7 @@ final class CompactionWriter {
     }
 
     private static void removeTemporaryFiles(Path directory) throws IOException {
-        try (var files = Files.newDirectoryStream(directory, "*.cask")) {
+        try (var files = Files.newDirectoryStream(directory, "*.{cask,hint}")) {
             for (Path file : files) {
                 Files.delete(file);
             }

@@ -176,6 +176,7 @@ public class Bitcask implements AutoCloseable {
         }
         for (long fileId : fileIds) {
             Files.deleteIfExists(previous.resolve(fileId + ".cask"));
+            Files.deleteIfExists(previous.resolve(fileId + ".hint"));
         }
         if (!previous.equals(root)) {
             Files.deleteIfExists(previous.resolve("READY"));

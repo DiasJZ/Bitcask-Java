@@ -74,8 +74,10 @@ final class DataFileWriter implements AutoCloseable {
             }
             throw error;
         }
+        long previousFileId = activeFileId;
         file = nextFile;
         activeFileId = nextFileId;
+        HintFileWriter.write(directory, previousFileId);
     }
 
     private void ensureOpen() throws IOException {

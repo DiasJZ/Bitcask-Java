@@ -46,7 +46,7 @@ public class CompactionPreparationTest {
         assertArrayEquals(first, Files.readAllBytes(output.resolve("0.cask")));
         assertArrayEquals(second, Files.readAllBytes(output.resolve("1.cask")));
         try (var files = Files.list(output)) {
-            assertEquals(3L, files.count());
+            assertEquals(5L, files.count());
         }
         try (Bitcask store = new Bitcask(directory)) {
             assertEquals("Bia", store.get("name").orElseThrow());

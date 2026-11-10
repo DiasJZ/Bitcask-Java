@@ -129,7 +129,8 @@ final class CompactionRecovery {
                 if (name.equals("READY")) {
                     continue;
                 }
-                if (!name.matches("(0|[1-9][0-9]*)\\.cask")
+                if (!name.matches("(0|[1-9][0-9]*)\\.(cask|hint)")
+                        || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)
                         || parseNumber(name.substring(0, name.length() - 5)) >= fileCount) {
                     throw new IOException("Unexpected file in prepared compaction: " + name);
                 }
