@@ -15,10 +15,20 @@ hint loading are not connected to database operations yet.
 `HintFile`, preserving every `HintEntry` in physical record order. It checks the
 hint structure, UTF-8 keys, record boundaries, and hint checksum before returning
 the result. It does not open the source `.cask` file or update the database index.
-The declared source size and checksum are metadata at this stage; checking them
-against the actual source and falling back to a data scan are separate steps.
+The declared source size and checksum remain metadata until they are checked
+against the actual source by `HintFileValidator.validate(directory, hint)`.
 The reader keeps all hint entries in memory and supports at most
 `Integer.MAX_VALUE` entries, subject to available memory.
+
+`HintIndexLoader.load(directory, fileId, index)` reads and validates a hint before
+replaying its entries. It returns `true` when the hint was used, or `false` when
+an unavailable, unsupported, corrupt, or stale hint required a normal data scan.
+It builds a candidate copy of the index and applies it only after loading the
+entire file successfully. Errors while scanning the source propagate and leave
+the supplied index unchanged. Loading does not rewrite or delete either file.
+The caller must provide a mutable index, process files in numeric order, and
+keep the source unchanged throughout loading. This loader is not connected to
+database startup yet.
 
 ## Purpose and Location
 

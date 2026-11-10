@@ -76,8 +76,10 @@ The [version 1 hint format](docs/hint-file-format.md) defines per-file metadata,
 record locations, deletion markers, and checksums. An internal writer validates
 closed data files and publishes complete, synchronized hints atomically. An
 internal reader checks hint structure and checksums and returns ordered metadata.
-Source freshness validation, automatic generation, and startup integration are
-not enabled yet; the database still scans its data files.
+A loader checks the source size and checksum before using a hint, falling back
+to a normal data scan when needed. Source errors still propagate without applying
+partial index changes. Automatic generation and startup integration are not
+enabled yet; the database still scans its data files.
 
 ## Technologies
 
