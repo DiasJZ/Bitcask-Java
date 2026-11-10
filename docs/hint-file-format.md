@@ -4,6 +4,13 @@ This document defines version 1. Hint writing, reading, validation, and startup
 integration are implemented in separate steps. Defining this format does not
 enable hints in the database.
 
+`HintFileWriter.write(directory, fileId)` implements generation and atomic
+publication. Its caller must keep the source file unchanged for the entire call.
+It validates record sizes, record CRC32 values, and UTF-8 keys, and streams value
+bytes without storing them in the hint. It fails if atomic publication is not
+supported; there is no non-atomic replacement fallback. Automatic generation and
+hint loading are not connected to database operations yet.
+
 ## Purpose and Location
 
 A hint file describes every record in one data file without copying its values.

@@ -73,8 +73,10 @@ database continues using the committed data.
 ## Hint Files
 
 The [version 1 hint format](docs/hint-file-format.md) defines per-file metadata,
-record locations, deletion markers, and checksums. Hint writing and startup
-integration are not enabled yet; the database still scans its data files.
+record locations, deletion markers, and checksums. An internal writer validates
+closed data files and publishes complete, synchronized hints atomically. Automatic
+generation and startup integration are not enabled yet; the database still scans
+its data files.
 
 ## Technologies
 
