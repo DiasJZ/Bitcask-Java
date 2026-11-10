@@ -57,14 +57,18 @@ public class Bitcask implements AutoCloseable {
         CompactionState state = CompactionRecovery.recover(directory);
         Path selectedDirectory = state.getDataDirectory();
         List<Long> fileIds = findDataFileIds(selectedDirectory);
-        Map<String, EntryLocation> loadedIndex = new HashMap<>();
-        for (long fileId : fileIds) {
-            try (CaskFile source = CaskFile.openReadOnly(selectedDirectory, fileId)) {
-                source.loadIndex(fileId, loadedIndex);
-            }
-        }
         long lastFileId = fileIds.isEmpty() ? 0L : fileIds.get(fileIds.size() - 1);
         long activeFileId = Math.max(lastFileId, state.getFirstWritableFileId());
+        Map<String, EntryLocation> loadedIndex = new HashMap<>();
+        for (long fileId : fileIds) {
+            if (fileId < activeFileId) {
+                HintIndexLoader.load(selectedDirectory, fileId, loadedIndex);
+            } else {
+                try (CaskFile source = CaskFile.openReadOnly(selectedDirectory, fileId)) {
+                    source.loadIndex(fileId, loadedIndex);
+                }
+            }
+        }
         DataFileWriter openedWriter = new DataFileWriter(selectedDirectory, activeFileId, maxFileSize);
         dataDirectory = selectedDirectory;
         index = loadedIndex;

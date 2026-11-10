@@ -82,7 +82,12 @@ partial index changes. Rotation generates a hint for each sealed file, and
 compaction generates hints for all compacted base files, including an empty base.
 Hints are removed with the obsolete data files after a successful compaction.
 The active writable file does not receive an automatic hint on ordinary close.
-Startup integration is not enabled yet; the database still scans its data files.
+Startup uses validated hints for sealed files and compacted base files, replaying
+them in numeric file order. The active writable file is always scanned directly.
+Missing, unsupported, corrupt, or stale hints fall back to the corresponding data
+file without rewriting the hint. Startup also works with older databases that
+have no hints. Source checksum validation still reads the data bytes, so hints
+do not eliminate data-file I/O or guarantee faster startup.
 
 If hint generation fails during rotation, the triggering write reports the error
 before appending its record. The writer has already moved to the next file and

@@ -1,8 +1,7 @@
 # Hint File Format
 
-This document defines version 1. Hint writing, reading, validation, and startup
-integration are implemented in separate steps. Defining this format does not
-enable hints in the database.
+This document defines version 1, used for hint generation, validation, and
+index reconstruction during database startup.
 
 `HintFileWriter.write(directory, fileId)` implements generation and atomic
 publication. Its caller must keep the source file unchanged for the entire call.
@@ -26,8 +25,16 @@ It builds a candidate copy of the index and applies it only after loading the
 entire file successfully. Errors while scanning the source propagate and leave
 the supplied index unchanged. Loading does not rewrite or delete either file.
 The caller must provide a mutable index, process files in numeric order, and
-keep the source unchanged throughout loading. This loader is not connected to
-database startup yet.
+keep the source unchanged throughout loading.
+
+Startup selects the committed data directory and determines the active file ID
+before loading the index. Files below that ID use `HintIndexLoader`; the active
+file is scanned directly even if a hint exists. Compacted base files remain
+eligible for hints when the next writable file has not been created yet. Files
+are replayed in numeric order into a shared index, preserving deletions across
+files. Opening does not generate or repair hints. The new writer is opened only
+after all files load successfully, and a loading failure releases the writer
+lock. The same loading path is used after a compaction switch.
 
 Rotation generates a hint after synchronizing and closing the old data file and
 switching the writer to a new file. If hint generation fails, the pending append
