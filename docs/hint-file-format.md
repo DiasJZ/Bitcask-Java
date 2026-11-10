@@ -11,6 +11,15 @@ bytes without storing them in the hint. It fails if atomic publication is not
 supported; there is no non-atomic replacement fallback. Automatic generation and
 hint loading are not connected to database operations yet.
 
+`HintFileReader.read(directory, fileId)` reads a hint into an immutable
+`HintFile`, preserving every `HintEntry` in physical record order. It checks the
+hint structure, UTF-8 keys, record boundaries, and hint checksum before returning
+the result. It does not open the source `.cask` file or update the database index.
+The declared source size and checksum are metadata at this stage; checking them
+against the actual source and falling back to a data scan are separate steps.
+The reader keeps all hint entries in memory and supports at most
+`Integer.MAX_VALUE` entries, subject to available memory.
+
 ## Purpose and Location
 
 A hint file describes every record in one data file without copying its values.
