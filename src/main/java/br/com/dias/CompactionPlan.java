@@ -20,7 +20,7 @@ final class CompactionPlan {
 
     Entry readEntry(String key) throws IOException {
         EntryLocation location = entries.get(key);
-        if (location == null) {
+        if (location == nul) {
             throw new IllegalArgumentException("Key is not part of the compaction plan");
         }
         Entry entry = CaskFile.readAt(directory, location);
