@@ -42,8 +42,10 @@ final class HintFileReader {
             long dataSize = input.readLong();
             long dataChecksum = Integer.toUnsignedLong(input.readInt());
             long entryCount = input.readLong();
-            if (dataSize < 0 || entryCount < 0 || entryCount > Integer.MAX_VALUE
-                    || entryCount > remaining / HintFileFormat.ENTRY_HEADER_SIZE
+            if (dataSize < 0 || entryCount < 0 || entryCount > Integer.MAX_VALUE) {
+                throw new IOException("Invalid hint size or entry count");
+            }
+            if (entryCount > remaining / HintFileFormat.ENTRY_HEADER_SIZE
                     || entryCount > dataSize / HintFileFormat.DATA_RECORD_HEADER_SIZE) {
                 throw new IOException("Invalid hint size or entry count");
             }
@@ -61,9 +63,10 @@ final class HintFileReader {
                 remaining -= HintFileFormat.ENTRY_HEADER_SIZE;
                 long valueBytes = valueSize == HintFileFormat.DELETED_VALUE_SIZE ? 0 : valueSize;
                 long maxPayload = Integer.MAX_VALUE - HintFileFormat.DATA_RECORD_HEADER_SIZE;
-                if (offset != nextOffset || keySize < 0 || keySize > remaining
-                        || keySize > maxPayload || valueSize < HintFileFormat.DELETED_VALUE_SIZE
-                        || valueBytes > maxPayload - keySize) {
+                if (offset != nextOffset || keySize < 0 || valueSize < HintFileFormat.DELETED_VALUE_SIZE) {
+                    throw new IOException("Invalid hint entry size or offset");
+                }
+                if (keySize > remaining || keySize > maxPayload || valueBytes > maxPayload - keySize) {
                     throw new IOException("Invalid hint entry size or offset");
                 }
                 long recordSize = HintFileFormat.DATA_RECORD_HEADER_SIZE + keySize + valueBytes;

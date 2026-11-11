@@ -58,7 +58,7 @@ public class BitcaskCompactionTest {
     }
 
     @Test
-    void shouldSupportRepeatedCompactionAndRemovePreviousGenerations() throws IOException {
+    void shouldRemoveOldCompactionFiles() throws IOException {
         Path first;
         Path second;
         try (Bitcask store = new Bitcask(directory, false, 40)) {
@@ -83,7 +83,7 @@ public class BitcaskCompactionTest {
     }
 
     @Test
-    void shouldCompactEmptyAndFullyDeletedDatabasesWithoutResurrectingKeys() throws IOException {
+    void shouldCompactAnEmptyDatabase() throws IOException {
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.compact();
             store.put("name", "Ana");

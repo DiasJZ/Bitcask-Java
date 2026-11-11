@@ -33,20 +33,14 @@ public class CaskFileTest {
             assertEquals(firstBytes.length, file.append(second));
         }
 
-
         byte[] stored = Files.readAllBytes(path);
 
         assertEquals(firstBytes.length + secondBytes.length, stored.length);
 
-        assertArrayEquals(
-                firstBytes,
-                Arrays.copyOfRange(stored, 0, firstBytes.length)
-        );
-
-        assertArrayEquals(
-                secondBytes,
-                Arrays.copyOfRange(stored, firstBytes.length, stored.length)
-        );
+        byte[] storedFirst = Arrays.copyOfRange(stored, 0, firstBytes.length);
+        byte[] storedSecond = Arrays.copyOfRange(stored, firstBytes.length, stored.length);
+        assertArrayEquals(firstBytes, storedFirst);
+        assertArrayEquals(secondBytes, storedSecond);
     }
 
     @Test

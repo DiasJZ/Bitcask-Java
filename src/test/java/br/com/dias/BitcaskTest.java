@@ -4,22 +4,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BitcaskTest {
     @TempDir
     Path directory;
 
     @Test
-    void shouldKeepDeletionAfterReopeningWithoutOverwritingOldRecords() throws IOException {
+    void shouldKeepDeletedKeysAfterReopening() throws IOException {
         Path path = directory.resolve("0.cask");
         byte[] beforeDeletion;
         try (Bitcask store = new Bitcask(directory)) {

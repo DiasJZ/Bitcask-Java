@@ -92,7 +92,7 @@ public class BitcaskRotationTest {
     }
 
     @Test
-    void shouldPreserveExistingValueAfterRejectingAnOversizedUpdate() throws IOException {
+    void shouldKeepValueWhenUpdateIsTooLarge() throws IOException {
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.put("name", "Ana");
             byte[] original = Files.readAllBytes(directory.resolve("0.cask"));
@@ -153,7 +153,7 @@ public class BitcaskRotationTest {
     }
 
     @Test
-    void shouldRejectTruncatedLastFileWithoutChangingEarlierFiles() throws IOException {
+    void shouldRejectTruncatedLastFile() throws IOException {
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.put("name", "Ana");
             store.put("drink", "coffee");

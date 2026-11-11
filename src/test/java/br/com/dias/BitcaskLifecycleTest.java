@@ -110,7 +110,7 @@ public class BitcaskLifecycleTest {
     }
 
     @Test
-    void shouldRejectOperationsAfterCloseAndAllowClosingTwice() throws IOException {
+    void shouldHandleClosingTwice() throws IOException {
         Bitcask store = new Bitcask(directory);
         store.put("name", "Ana");
         store.close();

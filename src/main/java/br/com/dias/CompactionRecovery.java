@@ -23,7 +23,10 @@ final class CompactionRecovery {
             throw new IOException("Invalid CURRENT file");
         }
         List<String> lines = Files.readAllLines(current, StandardCharsets.UTF_8);
-        if (lines.size() != 5 || !lines.get(0).equals("BITCASK_CURRENT_V1") || !lines.get(4).equals("END")) {
+        if (lines.size() != 5) {
+            throw new IOException("Invalid CURRENT format");
+        }
+        if (!lines.get(0).equals("BITCASK_CURRENT_V1") || !lines.get(4).equals("END")) {
             throw new IOException("Invalid CURRENT format");
         }
         String body = String.join("\n", lines.subList(0, 3)) + "\n";
@@ -96,7 +99,10 @@ final class CompactionRecovery {
             throw new IOException("Missing or corrupted READY manifest");
         }
         List<String> lines = Files.readAllLines(ready, StandardCharsets.UTF_8);
-        if (lines.size() < 4 || !lines.get(0).equals("BITCASK_COMPACTION_V1")
+        if (lines.size() < 4) {
+            throw new IOException("Invalid READY format");
+        }
+        if (!lines.get(0).equals("BITCASK_COMPACTION_V1")
                 || !lines.get(lines.size() - 1).equals("END")) {
             throw new IOException("Invalid READY format");
         }

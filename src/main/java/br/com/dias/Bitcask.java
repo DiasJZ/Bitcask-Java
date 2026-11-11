@@ -5,7 +5,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -173,10 +172,14 @@ public class Bitcask implements AutoCloseable {
     private void removePreviousFiles(Path previousDirectory, List<Long> fileIds) throws IOException {
         Path root = directory.toRealPath();
         Path previous = previousDirectory.toRealPath();
-        if (previous.equals(dataDirectory.toRealPath())
-                || (!previous.equals(root) && (!root.equals(previous.getParent())
-                || !previous.getFileName().toString().startsWith(".compaction-")))) {
+        if (previous.equals(dataDirectory.toRealPath())) {
             throw new IOException("Invalid directory for old data cleanup");
+        }
+        if (!previous.equals(root)) {
+            if (!root.equals(previous.getParent())
+                    || !previous.getFileName().toString().startsWith(".compaction-")) {
+                throw new IOException("Invalid directory for old data cleanup");
+            }
         }
         for (long fileId : fileIds) {
             Files.deleteIfExists(previous.resolve(fileId + ".cask"));

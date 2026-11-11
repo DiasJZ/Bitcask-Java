@@ -42,7 +42,7 @@ public class HintLifecycleTest {
     }
 
     @Test
-    void shouldKeepTheNewWriterUsableIfRotatedHintPublicationFails() throws IOException {
+    void shouldAllowRetryAfterHintFailure() throws IOException {
         Path occupied = Files.createDirectory(directory.resolve("0.hint"));
         Files.writeString(occupied.resolve("keep.txt"), "keep");
         try (Bitcask store = new Bitcask(directory, false, 40)) {
@@ -70,7 +70,7 @@ public class HintLifecycleTest {
     }
 
     @Test
-    void shouldGenerateCompactedHintsAndRemoveHintsFromPreviousGenerations() throws IOException {
+    void shouldReplaceOldHintsAfterCompaction() throws IOException {
         Files.writeString(directory.resolve("notes.hint"), "unrelated");
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.put("name", "Ana");
@@ -117,7 +117,7 @@ public class HintLifecycleTest {
     }
 
     @Test
-    void shouldRemoveGeneratedHintsWhenLaterCompactionWritingFails() throws IOException {
+    void shouldCleanHintsAfterCompactionFailure() throws IOException {
         Map<String, EntryLocation> index;
         try (CaskFile source = new CaskFile(directory, 0)) {
             source.append(new Entry(1000L, "a", "first"));
@@ -137,7 +137,7 @@ public class HintLifecycleTest {
     }
 
     @Test
-    void shouldKeepHintsOptionalWhenPreparingAndCommittingCompaction() throws IOException {
+    void shouldCommitWithoutValidHints() throws IOException {
         CompactionPlan plan = createPlan();
         Path output = CompactionWriter.write(directory, plan, 40);
         Files.delete(output.resolve("0.hint"));

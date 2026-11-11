@@ -158,7 +158,7 @@ public class HintFileReaderTest {
     }
 
     @Test
-    void shouldRejectMissingHintsAndNegativeFileIdsWithoutCreatingFiles() throws IOException {
+    void shouldRejectMissingHintsAndNegativeIds() throws IOException {
         assertThrows(IOException.class, () -> HintFileReader.read(directory, 7));
         assertThrows(IllegalArgumentException.class, () -> HintFileReader.read(directory, -1));
 

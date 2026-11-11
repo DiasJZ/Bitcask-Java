@@ -52,7 +52,7 @@ public class BitcaskCompactionValidationTest {
     }
 
     @Test
-    void shouldMatchReferenceMapAcrossRepeatedCompactionAndReopening() throws IOException {
+    void shouldMatchMapAfterCompaction() throws IOException {
         String[] keys = {"name", "city", "drink", "note", "naïve", ""};
         String[] values = {"Ana", "Recife", "café", "", "résumé", "blue"};
         for (boolean syncOnPut : new boolean[]{false, true}) {
@@ -116,7 +116,7 @@ public class BitcaskCompactionValidationTest {
     }
 
     @Test
-    void shouldCloseAndReleaseLockWhenTheCommitStateCannotBeRecovered() throws IOException {
+    void shouldReleaseLockAfterRecoveryFailure() throws IOException {
         Path current = directory.resolve("CURRENT");
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.put("name", "Ana");
@@ -134,7 +134,7 @@ public class BitcaskCompactionValidationTest {
     }
 
     @Test
-    void shouldRejectCommittedCorruptionWithoutFallingBackToStaleRootFiles() throws IOException {
+    void shouldRejectCorruptedCompactedFiles() throws IOException {
         try (Bitcask store = new Bitcask(directory, false, 40)) {
             store.put("name", "Bia");
             store.compact();

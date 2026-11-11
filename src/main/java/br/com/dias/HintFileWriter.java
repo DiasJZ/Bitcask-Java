@@ -88,8 +88,10 @@ final class HintFileWriter {
             long valueSize = fields.getLong();
             long valueBytes = valueSize == HintFileFormat.DELETED_VALUE_SIZE ? 0 : valueSize;
             long available = Math.min(dataSize - source.getFilePointer(), Integer.MAX_VALUE - header.length);
-            if (keySize < 0 || valueSize < HintFileFormat.DELETED_VALUE_SIZE
-                    || keySize > available || valueBytes > available - keySize) {
+            if (keySize < 0 || valueSize < HintFileFormat.DELETED_VALUE_SIZE) {
+                throw new IOException("Invalid record size");
+            }
+            if (keySize > available || valueBytes > available - keySize) {
                 throw new IOException("Invalid record size");
             }
 

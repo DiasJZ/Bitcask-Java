@@ -2,11 +2,10 @@ package br.com.dias;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,7 +113,10 @@ public class CaskFile implements AutoCloseable {
         long bytesAvailable = file.length() - file.getFilePointer();
         long maxDataSize = Math.min(bytesAvailable, Integer.MAX_VALUE - headerSize);
 
-        if (keySize < 0 || valueSize < -1 || keySize > maxDataSize || valueBytesSize > maxDataSize - keySize) {
+        if (keySize < 0 || valueSize < -1) {
+            throw new IOException("Invalid record size");
+        }
+        if (keySize > maxDataSize || valueBytesSize > maxDataSize - keySize) {
             throw new IOException("Invalid record size");
         }
 

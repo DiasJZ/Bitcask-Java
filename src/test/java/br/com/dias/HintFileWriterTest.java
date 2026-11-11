@@ -110,7 +110,7 @@ public class HintFileWriterTest {
     }
 
     @Test
-    void shouldKeepExistingHintAndRemovePartialOutputWhenSourceIsCorrupted() throws IOException {
+    void shouldKeepOldHintWhenSourceIsCorrupted() throws IOException {
         try (CaskFile source = new CaskFile(directory, 0)) {
             source.append(new Entry(1000L, "name", "Ana"));
             source.append(new Entry(2000L, "name", "Bia"));
@@ -158,7 +158,7 @@ public class HintFileWriterTest {
     }
 
     @Test
-    void shouldRejectMalformedUtf8KeysEvenWithAValidRecordChecksum() throws IOException {
+    void shouldRejectInvalidUtf8Keys() throws IOException {
         byte[] record = new Entry(1000L, "a", "value").encode();
         record[28] = (byte) 0xFF;
         ByteBuffer.wrap(record).putInt((int) checksum(Arrays.copyOfRange(record, 4, record.length)));

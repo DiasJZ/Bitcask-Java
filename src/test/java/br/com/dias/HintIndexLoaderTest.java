@@ -23,7 +23,7 @@ public class HintIndexLoaderTest {
     Path directory;
 
     @Test
-    void shouldReplayValidatedHintsIncludingUpdatesAndCrossFileDeletions() throws IOException {
+    void shouldReplayUpdatesAndDeletions() throws IOException {
         Path hint = writeSourceAndHint();
         byte[] hintBytes = Files.readAllBytes(hint);
         byte[] dataBytes = Files.readAllBytes(directory.resolve("7.cask"));
@@ -71,7 +71,7 @@ public class HintIndexLoaderTest {
     }
 
     @Test
-    void shouldScanSourceForUnsupportedVersionsWrongIdsAndInvalidMetadata() throws IOException {
+    void shouldFallBackForInvalidMetadata() throws IOException {
         Path hint = writeSourceAndHint();
         byte[] original = Files.readAllBytes(hint);
         for (int position : new int[]{0, 4, 8, 24, 44}) {
@@ -103,7 +103,7 @@ public class HintIndexLoaderTest {
     }
 
     @Test
-    void shouldDetectSameLengthSourceReplacementEvenWithTheSameModificationTime() throws IOException {
+    void shouldDetectReplacementWithSameSizeAndTime() throws IOException {
         Path source = directory.resolve("7.cask");
         Files.write(source, new Entry(1000L, "name", "Ana").encode());
         Path hint = HintFileWriter.write(directory, 7);
@@ -165,7 +165,7 @@ public class HintIndexLoaderTest {
     }
 
     @Test
-    void shouldPropagateTruncatedSourceErrorsWithoutApplyingPartialChanges() throws IOException {
+    void shouldKeepIndexWhenSourceIsTruncated() throws IOException {
         writeSourceAndHint();
         Path source = directory.resolve("7.cask");
         byte[] bytes = Files.readAllBytes(source);

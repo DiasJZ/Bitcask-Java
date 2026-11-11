@@ -90,7 +90,7 @@ public class CompactionRecoveryTest {
     }
 
     @Test
-    void shouldFailOnCommittedCorruptionInsteadOfFallingBackToOldData() throws IOException {
+    void shouldRejectCorruptedCommittedFiles() throws IOException {
         CompactionPlan plan = createPlan();
         Path output = prepareOutput(plan);
         CompactionRecovery.commit(directory, output);
@@ -136,7 +136,7 @@ public class CompactionRecoveryTest {
     }
 
     @Test
-    void shouldPreserveCurrentWhenTheNextOutputIsNotReadyOrHasChanged() throws IOException {
+    void shouldKeepCurrentAfterFailedCommit() throws IOException {
         CompactionPlan plan = createPlan();
         Path first = prepareOutput(plan);
         CompactionRecovery.commit(directory, first);

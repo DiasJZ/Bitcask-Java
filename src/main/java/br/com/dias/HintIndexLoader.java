@@ -23,23 +23,23 @@ final class HintIndexLoader {
             hint = null;
         }
 
-        Map<String, EntryLocation> candidate = new HashMap<>(index);
+        Map<String, EntryLocation> loadedIndex = new HashMap<>(index);
         if (hint != null) {
             for (HintEntry entry : hint.getEntries()) {
                 if (entry.isDeleted()) {
-                    candidate.remove(entry.getKey());
+                    loadedIndex.remove(entry.getKey());
                 } else {
-                    candidate.put(entry.getKey(), new EntryLocation(fileId, entry.getOffset()));
+                    loadedIndex.put(entry.getKey(), new EntryLocation(fileId, entry.getOffset()));
                 }
             }
         } else {
             try (CaskFile source = CaskFile.openReadOnly(directory, fileId)) {
-                source.loadIndex(fileId, candidate);
+                source.loadIndex(fileId, loadedIndex);
             }
         }
 
         index.clear();
-        index.putAll(candidate);
+        index.putAll(loadedIndex);
         return hint != null;
     }
 }

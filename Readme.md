@@ -1,13 +1,77 @@
 # Bitcask in Java
 
-A persistent key-value store implemented in Java.
+A persistent key-value store implemented in Java, used as an embedded library.
+It stores UTF-8 string keys and values on disk and has no runtime dependencies
+outside the Java standard library.
+
+## Build
+
+Use JDK 17 or later and Maven. From the project directory, run:
+
+```text
+mvn clean verify
+```
+
+This compiles the project, runs the tests, and creates
+`target/bitcask-1.0-SNAPSHOT.jar`. The JAR contains the library classes; it has no
+application entry point and is used on another application's classpath.
+JUnit is required only for tests. Generated files in `target/` are not committed.
+
+## Usage
+
+Save this example as `BitcaskExample.java` outside `src/main/java`:
+
+```java
+import br.com.dias.Bitcask;
+
+import java.io.IOException;
+import java.nio.file.Path;
+
+public class BitcaskExample {
+    public static void main(String[] args) throws IOException {
+        Path directory = Path.of(args[0]);
+
+        try (Bitcask store = new Bitcask(directory, true)) {
+            store.put("name", "Ana");
+            store.put("name", "Bia");
+            System.out.println(store.get("name").orElseThrow());
+
+            store.put("note", "");
+            store.delete("note");
+            System.out.println(store.get("note").isPresent());
+            store.compact();
+        }
+
+        try (Bitcask store = new Bitcask(directory)) {
+            System.out.println(store.get("name").orElseThrow());
+        }
+    }
+}
+```
+
+Compile and run it on Windows after building the JAR:
+
+```text
+javac --release 17 -cp target/bitcask-1.0-SNAPSHOT.jar -d target/example BitcaskExample.java
+java -cp "target/bitcask-1.0-SNAPSHOT.jar;target/example" BitcaskExample target/example-data
+```
+
+On Linux and macOS, replace the classpath separator `;` with `:`. The example
+prints `Bia`, `false`, and `Bia` on separate lines. Its data is stored under
+`target/example-data`, which a subsequent `mvn clean` removes. Applications should
+choose a persistent directory outside the build output.
+
+`get(key)` returns `Optional.empty()` for a missing or deleted key. Empty keys
+and empty values are supported. `put` requires a non-null key and value; use
+`delete(key)` to remove a key. Use try-with-resources to close the store and
+release its writer lock.
 
 ## Design
 
 Records are appended to data files. An in-memory index tracks the
 location of the latest value for each key.
 
-The project scope includes reads, writes, updates, deletions, index
+The implementation includes reads, writes, updates, deletions, index
 reconstruction on startup, CRC32 validation, disk synchronization,
 a single-writer lock, file rotation, compaction, and hint files.
 
@@ -52,7 +116,8 @@ larger than the limit is rejected, including its header and UTF-8 data.
 
 On startup, files are read in numeric order to rebuild the index. Later
 records replace earlier values, and deletion records remove earlier keys.
-Writing resumes in the highest-numbered file and rotates when necessary.
+Writing resumes in the highest-numbered writable file, creating one after a
+compacted base when necessary, and rotates at the configured size limit.
 Corrupt or incomplete records cause opening to fail without modifying data.
 
 ## Compaction
@@ -94,6 +159,23 @@ before appending its record. The writer has already moved to the next file and
 can accept a retry. A hint-generation failure during compaction output writing
 aborts that output before switching the database to it.
 
+## Operational Limits
+
+The key index is kept in memory. Hint loading also holds per-file metadata and
+a candidate index in memory. Compaction is explicit and blocks other operations
+on the same instance until it finishes. It needs additional disk space for the
+replacement files before old files can be removed.
+
+Only one Bitcask instance can open a given database directory at a time. Atomic
+file moves must be supported by the filesystem for hint publication and
+compaction commits. CRC32 detects accidental corruption; it does not provide
+authentication. Incomplete or corrupt data records cause opening to fail rather
+than being repaired automatically.
+
+Tests include abrupt JVM termination after synchronized writes. They do not
+establish guarantees for storage-device power loss. Unsynchronized writes can
+be lost if the process or system fails before synchronization.
+
 ## Technologies
 
 - Java 17 or later
@@ -104,4 +186,11 @@ aborts that output before switching the database to it.
 
 From the project directory, run:
 
-    mvn test
+```text
+mvn test
+```
+
+Tests cover record encoding, checksums, persistence, deletion, locking, rotation,
+compaction, hint validation, fallback, and recovery after process termination.
+See [hint integration tests](docs/hint-integration-tests.md) for the combined
+scenarios and their limits.

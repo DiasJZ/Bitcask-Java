@@ -1,11 +1,14 @@
 package br.com.dias;
+
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.CRC32;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +82,7 @@ public class EntryTest {
 
         assertEquals(0, buffer.remaining());
     }
+
     @Test
     void shouldEncodeRecordWithValidChecksum() {
         Entry entry = new Entry(1000L, "name", "Ana");

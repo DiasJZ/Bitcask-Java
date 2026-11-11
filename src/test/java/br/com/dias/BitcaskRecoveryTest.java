@@ -51,7 +51,7 @@ public class BitcaskRecoveryTest {
     }
 
     @Test
-    void shouldReplayFilesInNumericOrderInsteadOfTimestampOrder() throws IOException {
+    void shouldReplayFilesById() throws IOException {
         try (CaskFile file = new CaskFile(directory, 2)) {
             file.append(new Entry(9000L, "name", "Ana"));
             file.append(new Entry(9000L, "note", "old"));

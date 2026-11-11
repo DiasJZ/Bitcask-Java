@@ -55,7 +55,7 @@ public class BitcaskHintStartupTest {
     }
 
     @Test
-    void shouldIgnoreEvenAStructurallyValidHintForTheActiveFile() throws IOException {
+    void shouldIgnoreActiveFileHints() throws IOException {
         writeFile(0, new Entry(1000L, "name", "Ana"));
         Path hint = HintFileWriter.write(directory, 0);
         byte[] changed = Files.readAllBytes(hint);
@@ -128,7 +128,7 @@ public class BitcaskHintStartupTest {
     }
 
     @Test
-    void shouldReleaseTheLockWhenAHintCannotHideCorruptedSourceData() throws IOException {
+    void shouldReleaseLockWhenSourceIsCorrupted() throws IOException {
         writeFile(0, new Entry(1000L, "name", "Ana"));
         writeFile(1, new Entry(2000L, "note", ""));
         HintFileWriter.write(directory, 0);
@@ -155,7 +155,7 @@ public class BitcaskHintStartupTest {
     }
 
     @Test
-    void shouldLoadACommittedBaseBeforeTheFirstWritableFileExists() throws IOException {
+    void shouldOpenBaseWithoutAWritableFile() throws IOException {
         writeFile(0, new Entry(1000L, "name", "Ana"), new Entry(2000L, "note", ""));
         Map<String, EntryLocation> index;
         try (CaskFile source = CaskFile.openReadOnly(directory, 0)) {

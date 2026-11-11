@@ -43,7 +43,10 @@ final class CompactionPreparation {
             long size;
             try (CaskFile file = CaskFile.openReadOnly(candidate, fileId)) {
                 size = file.size();
-                if (size > maxFileSize || (size == 0 && (fileIds.size() != 1 || !plan.getKeys().isEmpty()))) {
+                if (size > maxFileSize) {
+                    throw new IOException("Invalid compacted file size: " + path.getFileName());
+                }
+                if (size == 0 && (fileIds.size() != 1 || !plan.getKeys().isEmpty())) {
                     throw new IOException("Invalid compacted file size: " + path.getFileName());
                 }
                 long offset = 0;

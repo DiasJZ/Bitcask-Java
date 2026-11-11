@@ -1,7 +1,8 @@
 package br.com.dias;
-import java.nio.charset.StandardCharsets;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.zip.CRC32;
 

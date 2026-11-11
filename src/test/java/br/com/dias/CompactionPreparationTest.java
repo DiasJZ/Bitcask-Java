@@ -21,7 +21,7 @@ public class CompactionPreparationTest {
     Path directory;
 
     @Test
-    void shouldMarkValidatedOutputReadyWithoutReplacingOriginals() throws IOException {
+    void shouldPrepareOutputAndKeepOriginalFiles() throws IOException {
         CompactionPlan plan = createPlan();
         byte[] original = Files.readAllBytes(directory.resolve("0.cask"));
         Path output = CompactionWriter.write(directory, plan, 40);
@@ -82,7 +82,7 @@ public class CompactionPreparationTest {
     }
 
     @Test
-    void shouldRejectChangedValuesAndDeletionRecordsEvenWithValidChecksums() throws IOException {
+    void shouldRejectChangedOrDeletedRecords() throws IOException {
         CompactionPlan plan = createPlan();
         Path changed = CompactionWriter.write(directory, plan, 40);
         Files.write(changed.resolve("0.cask"), new Entry(2000L, "name", "Eva").encode());
@@ -123,7 +123,7 @@ public class CompactionPreparationTest {
     }
 
     @Test
-    void shouldRejectTheSourceDirectoryAndPreserveExistingReadyMarker() throws IOException {
+    void shouldRejectSourceOrAlreadyPreparedOutput() throws IOException {
         CompactionPlan plan = createPlan();
         byte[] original = Files.readAllBytes(directory.resolve("0.cask"));
         assertThrows(IOException.class, () -> CompactionPreparation.prepare(directory, directory, plan, 40));

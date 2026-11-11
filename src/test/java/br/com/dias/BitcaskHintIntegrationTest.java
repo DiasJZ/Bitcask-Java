@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -94,7 +95,7 @@ public class BitcaskHintIntegrationTest {
     }
 
     @Test
-    void shouldPreserveLargeUtf8ValuesAndEmptyKeysAcrossHintFallbackAndCompaction() throws IOException {
+    void shouldKeepLargeValuesAndEmptyKeys() throws IOException {
         String large = "café🚀".repeat(4000);
         String updated = "résumé🚀".repeat(3000);
         try (Bitcask store = new Bitcask(directory, false, 40_000)) {
@@ -168,7 +169,7 @@ public class BitcaskHintIntegrationTest {
 
     private List<Path> hintFiles(Path dataDirectory) throws IOException {
         try (var paths = Files.newDirectoryStream(dataDirectory, "*.hint")) {
-            var result = new java.util.ArrayList<Path>();
+            List<Path> result = new ArrayList<>();
             for (Path path : paths) {
                 result.add(path);
             }
